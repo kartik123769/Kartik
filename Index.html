@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe - Fixed Version</title>
+    <style>
+        /* Previous CSS remains the same */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --ai-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f6fa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .mode-buttons {
+            margin: 20px 0;
+        }
+
+        .mode-btn {
+            background: #fff;
+            border: 2px solid var(--primary-color);
+            padding: 10px 20px;
+            margin: 0 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: #f8f9fa;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            font-size: 2.5em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .cell.ai {
+            color: var(--ai-color);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .restart-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic Tac Toe</h1>
+        
+        <div class="mode-buttons">
+            <button class="mode-btn active" onclick="setGameMode('2player')">2 Players</button>
+            <button class="mode-btn" onclick="setGameMode('1player')">vs Computer</button>
+        </div>
+
+        <div class="game-board" id="board">
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+        </div>
+
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <h2 id="result-text"></h2>
+                <button class="restart-btn" onclick="restartGame()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let gameMode = '2player';
+        const cells = document.querySelectorAll('[data-cell]');
+        const modal = document.getElementById('modal');
+        const resultText = document.getElementById('result-text');
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        // Initialize game
+        function initializeGame() {
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('ai');
+                cell.addEventListener('click', handleClick, { once: true });
+            });
+        }
+
+        function setGameMode(mode) {
+            gameMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(mode));
+            });
+            restartGame();
+        }
+
+        function handleClick(e) {
+            if (!gameActive) return;
+            
+            const cell = e.target;
+            if (cell.textContent !== '') return;
+
+            makeMove(cell);
+            
+            if (gameMode === '1player' && gameActive) {
+                setTimeout(() => computerMove(), 500);
+            }
+        }
+
+        function makeMove(cell) {
+            cell.textContent = currentPlayer;
+            cell.style.color = currentPlayer === 'X' ? '#2c3e50' : '#3498db';
+            
+            if (checkWin()) {
+                showResult(`Player ${currentPlayer} Wins!`);
+                gameActive = false;
+                return;
+            }
+
+            if (checkDraw()) {
+                showResult("It's a Draw!");
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        }
+
+        function computerMove() {
+            if (!gameActive) return;
+            
+            const emptyCells = [...cells].filter(cell => cell.textContent === '');
+            if (emptyCells.length === 0) return;
+
+            const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            randomCell.classList.add('ai');
+            makeMove(randomCell);
+        }
+
+        function checkWin() {
+            return winningCombinations.some(combination => {
+                return combination.every(index => {
+                    return cells[index].textContent === currentPlayer;
+                });
+            });
+        }
+
+        function checkDraw() {
+            return [...cells].every(cell => cell.textContent !== '');
+        }
+
+        function showResult(message) {
+            resultText.textContent = message;
+            modal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            currentPlayer = 'X';
+            gameActive = true;
+            modal.style.display = 'none';
+            initializeGame();
+        }
+
+        // Start the game
+        initializeGame();
+    </script>
+</body>
+</html>
